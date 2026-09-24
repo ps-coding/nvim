@@ -5,7 +5,7 @@ return {
       servers = {
         ocamllsp = {
           mason = false,
-          cmd = { "ocamllsp" },
+          cmd = { "ocamllsp", "--fallback-read-dot-merlin" },
         },
       },
     },
