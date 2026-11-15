@@ -11,9 +11,9 @@ return {
   },
   {
     "iurimateus/luasnip-latex-snippets.nvim",
-    ft = { "tex", "markdown" },
+    ft = "tex",
     dependencies = { "L3MON4D3/LuaSnip", "lervag/vimtex" },
-    opts = { use_treesitter = false },
+    opts = { use_treesitter = false, allow_on_markdown = false },
   },
   { "L3MON4D3/LuaSnip", opts = { enable_autosnippets = true } },
 }
