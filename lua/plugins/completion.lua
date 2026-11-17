@@ -18,19 +18,44 @@ local writing = {
 local tab_separated = { tsv = true }
 
 local function changes_text(item, ctx)
-  if item.insertTextFormat == vim.lsp.protocol.InsertTextFormat.Snippet then
+  local text = item.textEdit and item.textEdit.newText or item.insertText or item.label
+  if item.insertTextFormat == vim.lsp.protocol.InsertTextFormat.Snippet and text:find("$", 1, true) then
     return true
   end
-  local text = item.textEdit and item.textEdit.newText or item.insertText or item.label
   return text ~= ctx.line:sub(ctx.bounds.start_col, ctx.cursor[2])
 end
 
+local function expands(item)
+  local kinds = vim.lsp.protocol.CompletionItemKind
+  local kind = item.kind
+  return kind == kinds.Function
+    or kind == kinds.Method
+    or kind == kinds.Constructor
+    or kind == kinds.Snippet
+    or next(item.additionalTextEdits or {}) ~= nil
+end
+
 local function preselect(ctx)
-  if not writing[vim.bo[ctx.bufnr].filetype] then
-    return true
-  end
   local top = require("blink.cmp").get_items()[1]
-  return top ~= nil and top.source_id == "lsp" and changes_text(top, ctx)
+  if top == nil then
+    return false
+  end
+  if writing[vim.bo[ctx.bufnr].filetype] then
+    return top.source_id == "lsp" and changes_text(top, ctx)
+  end
+  return changes_text(top, ctx) or expands(top)
+end
+
+local function follows_accessor(ctx)
+  local before = ctx.line:sub(1, ctx.bounds.start_col - 1)
+  return before:find("[%.:]$") ~= nil or before:find("->$") ~= nil
+end
+
+local function snippets_fit(ctx)
+  if vim.bo[ctx.bufnr].filetype == "tex" then
+    return not require("latex.completion").in_command(ctx)
+  end
+  return not follows_accessor(ctx)
 end
 
 local function jump_to_next_snippet_field()
@@ -94,6 +119,11 @@ return {
         documentation = {
           window = { scrollbar = false },
           draw = draw_documentation,
+        },
+      },
+      sources = {
+        providers = {
+          snippets = { should_show_items = snippets_fit },
         },
       },
     },

@@ -18,11 +18,6 @@ return {
       },
       sources = {
         providers = {
-          snippets = {
-            should_show_items = function(ctx)
-              return not (is_tex(ctx) and require("latex.completion").in_command(ctx))
-            end,
-          },
           lsp = {
             override = {
               get_completions = function(source, ctx, callback)

@@ -26,6 +26,9 @@ end
 local function highlights(hl, c)
   local blend = require("tokyonight.util").blend
   hl.BlinkCmpMenuSelection = { bg = c.bg_visual }
+  for _, name in ipairs({ "BlinkCmpLabelDetail", "BlinkCmpLabelDescription", "BlinkCmpSource", "BlinkCmpKind" }) do
+    hl[name] = { fg = c.fg_dark }
+  end
 
   local readable = { [c.fg_gutter] = c.dark5, [c.terminal_black] = c.dark3 }
   for _, group in pairs(hl) do

@@ -13,7 +13,8 @@ Built on [LazyVim](https://github.com/LazyVim/LazyVim). Everything here adds to 
 | `lua/plugins/dashboard.lua` | Start screen |
 | `lua/plugins/git.lua` | Octo keys |
 | `lua/plugins/latex.lua` | vimtex, texlab completion fixes, math snippets |
-| `lua/plugins/lsp.lua` | Diagnostics, code lenses, OCaml project roots |
+| `lua/plugins/lean.lua` | Hands LazyVim's Lean settings to lean.nvim |
+| `lua/plugins/lsp.lua` | Diagnostics, code lenses, and per-server fixes (OCaml, Kotlin, Angular, Ruby, ESLint) |
 | `lua/plugins/org.lua` | Org mode, loaded on demand |
 | `lua/plugins/pdf.lua` | PDF reader |
 | `lua/plugins/ui.lua` | Statusline and popup borders |
@@ -30,11 +31,15 @@ A highlighted row is the one Enter takes. What gets highlighted depends on the f
 
 | File type | Highlighted | Enter | Tab |
 | --- | --- | --- | --- |
-| Code | Top suggestion, always | Accepts it | Next snippet field, otherwise accepts the top suggestion |
+| Code | Top suggestion, unless accepting it would change nothing | Accepts a highlighted row, otherwise a line break | Next snippet field, otherwise accepts the top suggestion |
 | Writing (LaTeX, Markdown, text, commit messages, org, ...) | Top suggestion only if it comes from the language server and would change the text | Accepts a highlighted row, otherwise a line break | Accepts a highlighted row, otherwise next snippet field, otherwise accepts the top suggestion |
-| Tab-separated (`tsv`) | As for code | Accepts it | Always a tab character |
+| Tab-separated (`tsv`) | As for code | As for code | Always a tab character |
 
 With no menu open, Tab indents. The lists of writing and tab-separated file types are at the top of `lua/plugins/completion.lua`.
+
+"Would change nothing" means the word is already typed in full and the suggestion adds no call brackets, import or snippet, so Enter after `else`, `return` or a finished name starts a new line.
+
+Snippets are not offered straight after `.`, `:` or `->`, where only members make sense.
 
 In LaTeX, snippets are offered for bare words (`frac`, `table`, `fig`) and texlab answers after a backslash or inside a command's braces.
 
@@ -55,3 +60,9 @@ In LaTeX, snippets are offered for bare words (`frac`, `table`, `fig`) and texla
   - luasnip-latex-snippets' `math_wrA` module and `luasnip-latex-snippets` autocmd group (`lua/latex/snippets.lua`).
   - snacks.image's `placement.new`, namespace and `SnacksImageLoading` highlight, used to remove the leftover loading label on PDF pages (`lua/plugins/pdf.lua`).
   - tokyonight's `util.bg`, set so blended colours use the real backdrop (`lua/plugins/colorscheme.lua`).
+- **Upstream workarounds.** Each can be deleted once the project named fixes it:
+  - lean.nvim reads `vim.g.lean_config` and no longer has `setup()`, which LazyVim's Lean extra still calls (`lua/plugins/lean.lua`).
+  - nvim-lspconfig works out the Kotlin server's cache folder once, from whichever file is open first, and sends an empty list when there is none; the server then refuses to start. It is now set per project (`kotlin_storage`).
+  - nvim-lspconfig starts the Angular server for every TypeScript and HTML file. It is limited to Angular and Nx workspaces (`angularls`).
+  - LazyVim's ESLint formatter runs prettier instead of ESLint whenever prettier handles the file type, so ESLint fixes were never applied on save (`register_eslint_fixes`).
+  - LazyVim runs the Ruby language server and a separate RuboCop server together, which doubles every offence when the bundle includes RuboCop. The separate server now steps aside in that case (`standalone_rubocop_root`).
