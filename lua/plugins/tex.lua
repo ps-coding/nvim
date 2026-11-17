@@ -4,7 +4,8 @@ end
 
 local function in_command(ctx)
   local before = ctx.line:sub(1, ctx.bounds.start_col - 1)
-  return before:sub(-1) == "\\" or before:match("{[^{}]*$") ~= nil
+  local argument = before:match("{([^{}]*)$")
+  return before:sub(-1) == "\\" or (argument ~= nil and not argument:gsub(",%s*", ","):find("%s"))
 end
 
 return {

@@ -23,7 +23,12 @@ local function in_zone(name)
 end
 
 local function map(lhs, rhs, desc)
-  vim.keymap.set("i", lhs, rhs, { buffer = buf, expr = true, replace_keycodes = false, desc = desc })
+  vim.keymap.set("i", lhs, function()
+    if vim.g.minipairs_disable or vim.b.minipairs_disable then
+      return k(lhs)
+    end
+    return rhs()
+  end, { buffer = buf, expr = true, replace_keycodes = false, desc = desc })
 end
 
 local dollar = { action = "closeopen", pair = "$$", neigh_pattern = "[^\\].", register = { cr = false } }
@@ -68,13 +73,38 @@ local function closing(text, key)
   end
 end
 
+local function pass_closer(before, after, key)
+  local closer = closing(after, key)
+  if not closer then
+    return
+  end
+  local head = closer:sub(1, -2)
+  if before:sub(-#head) == head and not escaped(before:sub(1, -#head - 1)) then
+    return key .. k("<Del>"):rep(#closer)
+  end
+  return RIGHT:rep(#closer)
+end
+
+local function before_content(after)
+  if after:sub(1, 1) == "\\" then
+    for _, pair in ipairs(latex_pairs) do
+      if after:sub(1, #pair[2]) == pair[2] then
+        return false
+      end
+    end
+    return true
+  end
+  return after:match("^%w") ~= nil
+end
+
 for open_key, close_key in pairs({ ["("] = ")", ["["] = "]", ["{"] = "}", ["|"] = "|" }) do
   map(open_key, function()
     local before, after = around_cursor()
     local closer = opened(before .. open_key)
-    if open_key == "|" and closing(after, "|") then
-      return RIGHT:rep(#closing(after, "|"))
-    elseif closer and not in_zone("in_comment") and not after:match("^[%w\\]") then
+    local pass = open_key == "|" and pass_closer(before, after, "|")
+    if pass then
+      return pass
+    elseif closer and not in_zone("in_comment") and not before_content(after) then
       return open_key .. closer .. LEFT:rep(#closer)
     elseif closer or open_key == "|" then
       return open_key
@@ -84,12 +114,8 @@ for open_key, close_key in pairs({ ["("] = ")", ["["] = "]", ["{"] = "}", ["|"] 
 
   if close_key ~= "|" then
     map(close_key, function()
-      local _, after = around_cursor()
-      local closer = closing(after, close_key)
-      if closer then
-        return RIGHT:rep(#closer)
-      end
-      return minipairs.close(open_key .. close_key, "[^\\].")
+      local before, after = around_cursor()
+      return pass_closer(before, after, close_key) or minipairs.close(open_key .. close_key, "[^\\].")
     end, "LaTeX-aware " .. close_key)
   end
 end
