@@ -25,7 +25,7 @@ return {
             return LazyVim.cmp.map({ "snippet_forward", "ai_nes", "ai_accept" })()
           end,
           function(cmp)
-            if vim.bo.filetype == "tex" and cmp.is_menu_visible() then
+            if cmp.is_menu_visible() then
               return cmp.select_and_accept()
             end
           end,
